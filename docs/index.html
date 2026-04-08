@@ -230,6 +230,17 @@
   }
   .config-sub code{color:var(--text);font-family:var(--mono);font-size:.75rem}
 
+  /* script section labels */
+  .script-section{
+    font-family:var(--mono);font-size:.7rem;font-weight:600;
+    letter-spacing:.06em;text-transform:uppercase;
+    color:var(--text-dim);margin-top:1.5rem;margin-bottom:.5rem;
+  }
+  .script-section:first-child{margin-top:0}
+  .script-desc{
+    font-size:.8rem;color:var(--text-dim);margin-bottom:.4rem;
+  }
+
   /* fork prompt */
   .fork-prompt{
     background:var(--bg);border:1px solid var(--yellow);border-radius:var(--radius);
@@ -353,6 +364,20 @@
       <div class="preview" id="preview">
         <pre id="previewCode"></pre>
       </div>
+
+      <div class="script-section">Utilities</div>
+
+      <p class="script-desc">Install GitHub SSH keys for a user</p>
+      <div class="oneliner" onclick="copyText('curlKeys')">
+        <span id="curlKeys"></span>
+        <span class="copied" id="copiedKeys">copied!</span>
+      </div>
+
+      <p class="script-desc" style="margin-top:.85rem">Install WSL SSH/GPG agent bridge (npiperelay)</p>
+      <div class="oneliner" onclick="copyText('curlWSL')">
+        <span id="curlWSL"></span>
+        <span class="copied" id="copiedWSL">copied!</span>
+      </div>
     </div>
 
     <!-- Tab 2: Configure -->
@@ -450,11 +475,19 @@ function buildUpdateUrl(v) {
   return `https://raw.githubusercontent.com/${v.owner}/${v.repo}/${v.branch}/buildme.sh`;
 }
 
+function getRawUrl(v, filename) {
+  return `https://raw.githubusercontent.com/${v.owner}/${v.repo}/${v.branch}/${filename}`;
+}
+
 function updateCurl() {
   const v = getValues();
   const url = getScriptUrl(v);
   document.getElementById('curlText').textContent =
     `curl -fsSL ${url} | sed 's|UPDATE_URL=".*"|UPDATE_URL="${buildUpdateUrl(v)}"|' > buildme.sh && chmod +x buildme.sh`;
+  document.getElementById('curlKeys').textContent =
+    `curl -fsSL ${getRawUrl(v, 'github-keys-install.sh')} | sudo bash -s -- --github <USERNAME>`;
+  document.getElementById('curlWSL').textContent =
+    `curl -fsSL ${getRawUrl(v, 'install-wsl-ssh-agent.sh')} | bash -s --`;
 }
 
 function updateFooter() {
@@ -707,9 +740,15 @@ function togglePreview() {
 
 /* ── Copy curl ── */
 function copyCurl() {
-  const text = document.getElementById('curlText').textContent;
+  copyText('curlText', 'copiedBadge');
+}
+
+function copyText(spanId, badgeId) {
+  // Derive badge ID from span ID if not provided: curlKeys → copiedKeys
+  if (!badgeId) badgeId = 'copied' + spanId.replace('curl', '');
+  const text = document.getElementById(spanId).textContent;
   navigator.clipboard.writeText(text).then(() => {
-    const badge = document.getElementById('copiedBadge');
+    const badge = document.getElementById(badgeId);
     badge.classList.add('show');
     setTimeout(() => badge.classList.remove('show'), 1500);
   });
