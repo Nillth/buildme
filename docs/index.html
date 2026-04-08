@@ -488,38 +488,55 @@ function hideForkPrompt() {
 function parseConfExample(text) {
   const sections = [];
   let current = null;
-  const sectionRe = /^#\s*─+\s*(.+?)\s*─*\s*$/;
-  const varRe     = /^#([A-Z_][A-Z0-9_]*)="([^"]*)"(?:\s+#\s*(.*))?$/;
-  const noteRe    = /^#\s*Note:\s*(.+)$/;
+  let expectTitle = false;
+  const separatorRe = /^#\s*─{3,}\s*$/;
+  const titleRe     = /^#\s+(.+)$/;
+  const varRe       = /^#([A-Z_][A-Z0-9_]*)="([^"]*)"(?:\s+#\s*(.*))?$/;
+  const noteRe      = /^#\s*Note:\s*(.+)$/;
 
   for (const raw of text.split('\n')) {
     const line = raw.trimEnd();
 
-    const sm = line.match(sectionRe);
-    if (sm) {
-      current = { title: sm[1].trim(), vars: [] };
-      sections.push(current);
+    // Pure separator line — next comment is a section title
+    if (separatorRe.test(line)) {
+      expectTitle = true;
       continue;
     }
 
-    if (!current) continue;
-
-    const nm = line.match(noteRe);
-    if (nm) {
-      current.envNote = nm[1].trim();
-      continue;
-    }
-
+    // Variable line
     const vm = line.match(varRe);
     if (vm) {
-      current.vars.push({
-        name: vm[1],
-        placeholder: vm[2],
-        hint: vm[3] ? vm[3].trim() : ''
-      });
+      if (current) {
+        current.vars.push({
+          name: vm[1],
+          placeholder: vm[2],
+          hint: vm[3] ? vm[3].trim() : ''
+        });
+      }
+      expectTitle = false;
+      continue;
+    }
+
+    // Note line
+    const nm = line.match(noteRe);
+    if (nm) {
+      if (current) current.envNote = nm[1].trim();
+      expectTitle = false;
+      continue;
+    }
+
+    // Title line (comment that follows a separator)
+    if (expectTitle) {
+      const tm = line.match(titleRe);
+      if (tm) {
+        current = { title: tm[1].trim(), vars: [] };
+        sections.push(current);
+        expectTitle = false;
+      }
     }
   }
-  return sections;
+  // Drop sections with no variables
+  return sections.filter(s => s.vars.length > 0);
 }
 
 let CONFIG_SECTIONS = [];
