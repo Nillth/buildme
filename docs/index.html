@@ -162,6 +162,78 @@
     font-family:var(--sans);font-weight:700;font-size:1.8rem;color:var(--text-bright);
     margin-bottom:2rem;text-align:center;
   }
+
+  /* config section — wider */
+  .section-wide{max-width:900px;margin:0 auto;padding:4rem 1.5rem}
+  .section-wide h2{
+    font-family:var(--sans);font-weight:700;font-size:1.8rem;color:var(--text-bright);
+    margin-bottom:.5rem;text-align:center;
+  }
+  .section-wide .section-sub{
+    text-align:center;color:var(--text-dim);font-size:.9rem;margin-bottom:2rem;
+  }
+
+  .config-group{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    margin-bottom:1rem;overflow:hidden;
+  }
+  .config-group-header{
+    display:flex;align-items:center;gap:.75rem;
+    padding:1rem 1.25rem;cursor:pointer;user-select:none;
+    transition:background .15s;
+  }
+  .config-group-header:hover{background:rgba(255,255,255,.02)}
+  .config-group-header .chevron{
+    font-size:.7rem;color:var(--accent);transition:transform .2s;
+    flex-shrink:0;width:1rem;text-align:center;
+  }
+  .config-group-header.open .chevron{transform:rotate(90deg)}
+  .config-group-header .group-title{
+    font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--text-bright);flex:1;
+  }
+  .config-group-header .group-count{
+    font-family:var(--mono);font-size:.65rem;color:var(--text-dim);
+    background:var(--bg);border-radius:999px;padding:.15rem .5rem;
+  }
+  .config-group-body{
+    max-height:0;overflow:hidden;transition:max-height .3s ease;
+  }
+  .config-group-body.open{max-height:600px}
+  .config-group-body-inner{padding:0 1.25rem 1.25rem}
+
+  .config-field{margin-bottom:.85rem}
+  .config-field:last-child{margin-bottom:0}
+  .config-field label{
+    display:flex;align-items:center;gap:.5rem;
+    font-family:var(--mono);font-size:.78rem;font-weight:600;color:var(--text);
+    margin-bottom:.3rem;
+  }
+  .config-field label .env-badge{
+    font-size:.6rem;font-weight:400;color:var(--yellow);
+    background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);
+    border-radius:4px;padding:.1rem .4rem;letter-spacing:.04em;
+  }
+  .config-field .hint{
+    font-size:.7rem;color:var(--text-dim);margin-bottom:.3rem;
+    font-family:var(--mono);
+  }
+  .config-field input{
+    width:100%;font-family:var(--mono);font-size:.82rem;
+    background:var(--bg);color:var(--text-bright);
+    border:1px solid var(--border);border-radius:6px;
+    padding:.5rem .7rem;outline:none;
+    transition:border-color .2s;
+  }
+  .config-field input:focus{border-color:var(--accent)}
+  .config-field input::placeholder{color:var(--text-dim);opacity:.4}
+
+  /* config download bar */
+  .config-download{
+    display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;
+    margin-top:1.5rem;
+  }
+
   .steps{
     display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;
   }
@@ -211,7 +283,7 @@
   </div>
 
   <div class="card">
-    <h2>▸ Generate your script</h2>
+    <h2>&#9654; Generate your script</h2>
     <div class="field-row">
       <div class="field">
         <label>GitHub Owner / Org</label>
@@ -228,9 +300,9 @@
     </div>
 
     <div class="actions">
-      <button class="btn btn-primary" onclick="downloadScript()">
+      <button class="btn btn-primary" onclick="downloadAll()">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-        Download buildme.sh
+        Download buildme.sh + conf
       </button>
       <button class="btn btn-secondary" onclick="togglePreview()">Preview</button>
     </div>
@@ -243,6 +315,19 @@
     <div class="preview" id="preview">
       <pre id="previewCode"></pre>
     </div>
+  </div>
+</section>
+
+<section class="section-wide" id="configure">
+  <h2>Configure</h2>
+  <p class="section-sub">Set the variables for your <code>buildme.conf</code>. Only configured values are included in the download.</p>
+  <div id="configGroups"></div>
+  <div class="config-download">
+    <button class="btn btn-primary" onclick="downloadAll()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Download buildme.sh + conf
+    </button>
+    <button class="btn btn-secondary" onclick="downloadConfOnly()">Download buildme.conf only</button>
   </div>
 </section>
 
@@ -273,11 +358,31 @@
 </section>
 
 <footer>
-  <a href="https://github.com/Nillth/buildme">github.com/Nillth/buildme</a> · MIT License
+  <a id="footerLink" href="https://github.com/Nillth/buildme">github.com/Nillth/buildme</a> · MIT License
 </footer>
 
 <script>
-const SCRIPT_URL = 'https://raw.githubusercontent.com/Nillth/buildme/main/buildme.sh';
+/* ── Detect owner/repo from the page's own hosting URL ── */
+(function detectDefaults() {
+  // GitHub Pages: <owner>.github.io/<repo>/
+  // Also works for custom domains if path contains the repo
+  const loc = window.location;
+  const ghPages = loc.hostname.match(/^([^.]+)\.github\.io$/);
+  if (ghPages) {
+    const owner = ghPages[1];
+    const repo = loc.pathname.split('/').filter(Boolean)[0];
+    if (owner) document.getElementById('owner').value = owner;
+    if (repo)  document.getElementById('repo').value = repo;
+    return;
+  }
+  // Fallback: check for meta tag (forks can set this)
+  const meta = document.querySelector('meta[name="buildme-repo"]');
+  if (meta) {
+    const parts = meta.content.split('/');
+    if (parts[0]) document.getElementById('owner').value = parts[0];
+    if (parts[1]) document.getElementById('repo').value = parts[1];
+  }
+})();
 
 function getValues() {
   const owner = document.getElementById('owner').value.trim() || 'Nillth';
@@ -286,45 +391,272 @@ function getValues() {
   return { owner, repo, branch };
 }
 
-function buildUpdateUrl({ owner, repo, branch }) {
-  return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/buildme.sh`;
+function getScriptUrl(v) {
+  return `https://raw.githubusercontent.com/${v.owner}/${v.repo}/${v.branch}/buildme.sh`;
+}
+
+function buildUpdateUrl(v) {
+  return `https://raw.githubusercontent.com/${v.owner}/${v.repo}/${v.branch}/buildme.sh`;
 }
 
 function updateCurl() {
   const v = getValues();
-  const url = buildUpdateUrl(v);
+  const url = getScriptUrl(v);
   document.getElementById('curlText').textContent =
-    `curl -fsSL ${SCRIPT_URL} | sed 's|UPDATE_URL=".*"|UPDATE_URL="${url}"|' > buildme.sh && chmod +x buildme.sh`;
+    `curl -fsSL ${url} | sed 's|UPDATE_URL=".*"|UPDATE_URL="${buildUpdateUrl(v)}"|' > buildme.sh && chmod +x buildme.sh`;
 }
 
-// keep curl one-liner in sync
-document.querySelectorAll('#owner,#repo,#branch').forEach(el => el.addEventListener('input', updateCurl));
+function updateFooter() {
+  const v = getValues();
+  const link = document.getElementById('footerLink');
+  link.href = `https://github.com/${v.owner}/${v.repo}`;
+  link.textContent = `github.com/${v.owner}/${v.repo}`;
+}
+
+document.querySelectorAll('#owner,#repo,#branch').forEach(el => {
+  el.addEventListener('input', () => { updateCurl(); updateFooter(); });
+});
 updateCurl();
 
-async function downloadScript() {
-  const v = getValues();
-  const updateUrl = buildUpdateUrl(v);
+/* ── Configuration variable definitions (parsed from buildme.conf.example) ── */
+const CONFIG_SECTIONS = [
+  {
+    title: 'Notifications — Gotify',
+    vars: [
+      { name: 'GOTIFY_URL',      placeholder: 'https://gotify.example.com',  hint: '' },
+      { name: 'GOTIFY_TOKEN',    placeholder: 'your-app-token',              hint: '' },
+      { name: 'GOTIFY_PRIORITY', placeholder: '5',                           hint: '1 (min) – 10 (max); >=8 = urgent/sound' },
+    ]
+  },
+  {
+    title: 'Notifications — ntfy',
+    vars: [
+      { name: 'NTFY_URL',      placeholder: 'https://ntfy.sh/your-topic',  hint: 'or https://your-ntfy.example.com/your-topic' },
+      { name: 'NTFY_TOKEN',    placeholder: '',                             hint: 'leave empty for public topics' },
+      { name: 'NTFY_PRIORITY', placeholder: 'default',                      hint: 'min, low, default, high, urgent' },
+    ]
+  },
+  {
+    title: 'Notifications — Slack',
+    vars: [
+      { name: 'SLACK_WEBHOOK_URL', placeholder: 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL', hint: '' },
+      { name: 'SLACK_CHANNEL',     placeholder: '#deployments',                                      hint: '' },
+      { name: 'SLACK_USERNAME',    placeholder: 'buildme',                                           hint: '' },
+    ]
+  },
+  {
+    title: 'Notifications — Microsoft Teams',
+    vars: [
+      { name: 'TEAMS_WEBHOOK_URL', placeholder: 'https://outlook.office.com/webhook/YOUR/WEBHOOK/URL', hint: '' },
+    ]
+  },
+  {
+    title: 'Notifications — Discord',
+    vars: [
+      { name: 'DISCORD_WEBHOOK_URL', placeholder: 'https://discord.com/api/webhooks/YOUR/WEBHOOK', hint: '' },
+    ]
+  },
+  {
+    title: 'Deployment — SSH remote redeploy',
+    vars: [
+      { name: 'REMOTE_HOST',        placeholder: 'user@your-server.example.com',     hint: '' },
+      { name: 'REMOTE_COMPOSE_DIR', placeholder: '/opt/stacks/${PROJECT_NAME}',       hint: '' },
+    ]
+  },
+  {
+    title: 'Deployment — Watchtower',
+    vars: [
+      { name: 'WATCHTOWER_URL',   placeholder: 'http://your-host:8080/v1/update', hint: '' },
+      { name: 'WATCHTOWER_TOKEN', placeholder: 'your-watchtower-token',            hint: '' },
+    ]
+  },
+  {
+    title: 'Deployment — Portainer',
+    vars: [
+      { name: 'PORTAINER_WEBHOOK_URL', placeholder: 'https://your-portainer.example.com/api/stacks/webhooks/YOUR-UUID', hint: '' },
+    ]
+  },
+  {
+    title: 'Deployment — Coolify',
+    vars: [
+      { name: 'COOLIFY_WEBHOOK_URL', placeholder: 'https://your-coolify.example.com/api/v1/deploy?uuid=YOUR-UUID&force=false', hint: '' },
+    ],
+    envNote: 'COOLIFY_TOKEN must be set as an environment variable (not stored in config)'
+  },
+  {
+    title: 'Deployment — Fly.io',
+    vars: [
+      { name: 'FLY_APP', placeholder: '${PROJECT_NAME}', hint: 'fly app name (matches fly.toml app = "...")' },
+    ]
+  },
+  {
+    title: 'Deployment — Azure Container Apps',
+    vars: [
+      { name: 'AZ_APP_NAME',       placeholder: '${PROJECT_NAME}',  hint: '' },
+      { name: 'AZ_RESOURCE_GROUP', placeholder: 'my-resource-group', hint: '' },
+    ]
+  },
+  {
+    title: 'Releases — GitHub / Gitea',
+    vars: [
+      { name: 'RELEASE_HOST', placeholder: 'https://api.github.com', hint: 'or https://git.example.com for Gitea' },
+    ],
+    envNote: 'GITEA_TOKEN / GITHUB_TOKEN must be set as environment variables'
+  },
+  {
+    title: 'CI/CD — Trigger pipeline dispatch',
+    vars: [
+      { name: 'DISPATCH_HOST',  placeholder: 'https://api.github.com', hint: 'or https://git.example.com for Gitea' },
+      { name: 'DISPATCH_EVENT', placeholder: 'image-published',         hint: 'must match on.repository_dispatch.types in workflow' },
+    ],
+    envNote: 'GITEA_TOKEN / GITHUB_TOKEN must be set as environment variables'
+  },
+  {
+    title: 'Registry — Mirror to secondary registry',
+    vars: [
+      { name: 'MIRROR_REGISTRY', placeholder: 'ghcr.io',   hint: 'e.g. docker.io, ghcr.io, registry.example.com' },
+      { name: 'MIRROR_OWNER',    placeholder: 'your-org',   hint: 'owner/namespace on the mirror' },
+    ]
+  },
+  {
+    title: 'Testing — Health check',
+    vars: [
+      { name: 'HEALTH_URL', placeholder: 'https://your-app.example.com/health', hint: '' },
+    ]
+  },
+  {
+    title: 'Helm — Values update & rollout',
+    vars: [
+      { name: 'HELM_NAMESPACE', placeholder: 'default',           hint: '' },
+      { name: 'HELM_RELEASE',   placeholder: '${PROJECT_NAME}',   hint: '' },
+      { name: 'HELM_CHART_DIR', placeholder: '${GIT_ROOT}/helm',  hint: '' },
+    ]
+  },
+];
 
+/* ── Render config groups ── */
+(function renderConfigGroups() {
+  const container = document.getElementById('configGroups');
+  CONFIG_SECTIONS.forEach((section, si) => {
+    const group = document.createElement('div');
+    group.className = 'config-group';
+
+    const header = document.createElement('div');
+    header.className = 'config-group-header';
+    header.innerHTML = `
+      <span class="chevron">&#9654;</span>
+      <span class="group-title">${section.title}</span>
+      <span class="group-count">${section.vars.length} var${section.vars.length > 1 ? 's' : ''}</span>
+    `;
+    header.addEventListener('click', () => {
+      header.classList.toggle('open');
+      body.classList.toggle('open');
+    });
+
+    const body = document.createElement('div');
+    body.className = 'config-group-body';
+    const inner = document.createElement('div');
+    inner.className = 'config-group-body-inner';
+
+    if (section.envNote) {
+      const note = document.createElement('div');
+      note.className = 'config-field hint';
+      note.style.marginBottom = '.75rem';
+      note.style.color = 'var(--yellow)';
+      note.textContent = section.envNote;
+      inner.appendChild(note);
+    }
+
+    section.vars.forEach(v => {
+      const field = document.createElement('div');
+      field.className = 'config-field';
+      let labelHtml = `<label>${v.name}</label>`;
+      let hintHtml = v.hint ? `<div class="hint">${v.hint}</div>` : '';
+      field.innerHTML = `${labelHtml}${hintHtml}<input type="text" id="conf_${v.name}" placeholder="${v.placeholder}" data-var="${v.name}" />`;
+      inner.appendChild(field);
+    });
+
+    body.appendChild(inner);
+    group.appendChild(header);
+    group.appendChild(body);
+    container.appendChild(group);
+  });
+})();
+
+/* ── Generate buildme.conf content ── */
+function generateConf() {
+  let lines = ['#!/bin/bash'];
+  lines.push('# buildme.conf — generated by buildme configurator');
+  lines.push('');
+
+  let hasAny = false;
+  CONFIG_SECTIONS.forEach(section => {
+    const sectionLines = [];
+    section.vars.forEach(v => {
+      const input = document.getElementById('conf_' + v.name);
+      const val = input ? input.value.trim() : '';
+      if (val) {
+        sectionLines.push(`${v.name}="${val}"`);
+      }
+    });
+    if (sectionLines.length) {
+      hasAny = true;
+      lines.push('# ' + section.title);
+      lines.push(...sectionLines);
+      lines.push('');
+    }
+  });
+
+  if (!hasAny) return null;
+  return lines.join('\n') + '\n';
+}
+
+/* ── Download helpers ── */
+async function fetchScript() {
+  const v = getValues();
+  const scriptUrl = getScriptUrl(v);
+  const updateUrl = buildUpdateUrl(v);
+  const resp = await fetch(scriptUrl);
+  if (!resp.ok) throw new Error('Fetch failed: ' + resp.status);
+  let text = await resp.text();
+  text = text.replace(/UPDATE_URL="[^"]*"/, `UPDATE_URL="${updateUrl}"`);
+  return text;
+}
+
+function triggerDownload(filename, content, mime) {
+  const blob = new Blob([content], { type: mime || 'application/octet-stream' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function downloadAll() {
   try {
-    const resp = await fetch(SCRIPT_URL);
-    if (!resp.ok) throw new Error('Fetch failed');
-    let text = await resp.text();
-    text = text.replace(
-      /UPDATE_URL="[^"]*"/,
-      `UPDATE_URL="${updateUrl}"`
-    );
-    const blob = new Blob([text], { type: 'application/x-shellscript' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'buildme.sh';
-    a.click();
-    URL.revokeObjectURL(a.href);
+    const scriptText = await fetchScript();
+    triggerDownload('buildme.sh', scriptText, 'application/x-shellscript');
+
+    const conf = generateConf();
+    if (conf) {
+      // Small delay so browser handles two downloads
+      setTimeout(() => triggerDownload('buildme.conf', conf, 'application/x-shellscript'), 300);
+    }
   } catch (e) {
-    // fallback: generate stub locally
-    alert('Could not fetch from GitHub. Check your connection and try again.');
+    alert('Could not fetch buildme.sh from GitHub. Check your connection and try again.');
   }
 }
 
+function downloadConfOnly() {
+  const conf = generateConf();
+  if (!conf) {
+    alert('No variables configured yet. Fill in at least one value above.');
+    return;
+  }
+  triggerDownload('buildme.conf', conf, 'application/x-shellscript');
+}
+
+/* ── Preview ── */
 function togglePreview() {
   const el = document.getElementById('preview');
   const v = getValues();
@@ -334,6 +666,7 @@ function togglePreview() {
   el.classList.toggle('open');
 }
 
+/* ── Copy curl ── */
 function copyCurl() {
   const text = document.getElementById('curlText').textContent;
   navigator.clipboard.writeText(text).then(() => {
