@@ -4,8 +4,8 @@
 # Requires Watchtower running with --http-api-update and a token set.
 # Docs: https://containrrr.dev/watchtower/http-api-mode/
 
-WATCHTOWER_URL="http://your-host:8080/v1/update"
-WATCHTOWER_TOKEN="your-watchtower-token"
+WATCHTOWER_URL="${WATCHTOWER_URL:-http://your-host:8080/v1/update}"
+WATCHTOWER_TOKEN="${WATCHTOWER_TOKEN:-your-watchtower-token}"
 
 if [[ "$SKIP_PUSH" == true ]]; then
     echo -e "${YELLOW}⏭️  Skipping Watchtower trigger (push was skipped).${RESET}"

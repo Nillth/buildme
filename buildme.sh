@@ -104,7 +104,6 @@ fi
 # ──────────────────────────────────────────────────────────────
 # Extensions: interactive hook installer
 if [[ "$DO_EXTENSIONS" == true ]]; then
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     HOOK_INSTALL_DIR="${SCRIPT_DIR}/buildme.d"
 
     if [[ "$UPDATE_URL" == *"YOUR_ORG"* ]]; then
@@ -240,6 +239,9 @@ run_cmd() {
         "$@"
     fi
 }
+
+# Directory containing this script (used for buildme.d/ and buildme.conf)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ──────────────────────────────────────────────────────────────
 # Anchor to git root so the script works from any subdirectory
@@ -465,14 +467,23 @@ else
 fi
 
 # ──────────────────────────────────────────────────────────────
+# Load project config (buildme.conf next to buildme.sh) before hooks run.
+# Hooks use ${VAR:-default} so values set here take precedence.
+BUILDME_CONF="${SCRIPT_DIR}/buildme.conf"
+if [[ -f "$BUILDME_CONF" ]]; then
+    echo -e "${BLUE}⚙️  Loading config: ${BUILDME_CONF}${RESET}"
+    # shellcheck source=/dev/null
+    source "$BUILDME_CONF"
+fi
+
 # Post-build hooks
 # Drop any *.sh files into a buildme.d/ directory next to this script.
 # They are sourced in lexical order (001-first, 002-second, etc.).
 # Each hook inherits all variables: NEW_VERSION, BUILT_REPOS, ENGINE,
 # SKIP_PUSH, DRY_RUN, GIT_SERVER, GIT_OWNER, PROJECT_NAME,
-# GIT_ROOT, and the run_cmd helper.
+# GIT_ROOT, SCRIPT_DIR, and the run_cmd helper.
 # Use 'return' (not 'exit') to bail out of an individual hook early.
-HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/buildme.d"
+HOOK_DIR="${SCRIPT_DIR}/buildme.d"
 if [[ -d "$HOOK_DIR" ]]; then
     HOOK_FILES=()
     while IFS= read -r -d '' f; do

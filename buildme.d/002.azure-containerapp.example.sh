@@ -2,8 +2,8 @@
 # 002.azure-containerapp.sh
 # Updates the Azure Container App after a successful push.
 
-AZ_APP_NAME="cso-web"
-AZ_RESOURCE_GROUP="CSO_Resources"
+AZ_APP_NAME="${AZ_APP_NAME:-${PROJECT_NAME}}"
+AZ_RESOURCE_GROUP="${AZ_RESOURCE_GROUP:-my-resource-group}"
 
 if [[ "$SKIP_PUSH" == true ]]; then
     echo -e "${YELLOW}⏭️  Skipping Azure container app update (push was skipped).${RESET}"

@@ -3,7 +3,7 @@
 # Posts a build completion message to a Discord channel via Webhook.
 # Docs: https://discord.com/developers/docs/resources/webhook
 
-DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/YOUR/WEBHOOK"
+DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL:-https://discord.com/api/webhooks/YOUR/WEBHOOK}"
 
 IMAGE_LIST=$(printf '• `%s`\n' "${BUILT_REPOS[@]}")
 

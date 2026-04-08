@@ -3,9 +3,9 @@
 # Sends a push notification via Gotify (self-hosted).
 # Docs: https://gotify.net/docs/pushmsg
 
-GOTIFY_URL="https://gotify.example.com"  # base URL of your Gotify server (no trailing slash)
-GOTIFY_TOKEN="your-app-token"            # application token from the Gotify UI
-GOTIFY_PRIORITY="5"                      # 1 (min) – 10 (max); ≥8 triggers urgent/sound on clients
+GOTIFY_URL="${GOTIFY_URL:-https://gotify.example.com}"  # base URL of your Gotify server (no trailing slash)
+GOTIFY_TOKEN="${GOTIFY_TOKEN:-your-app-token}"            # application token from the Gotify UI
+GOTIFY_PRIORITY="${GOTIFY_PRIORITY:-5}"                      # 1 (min) – 10 (max); ≥8 triggers urgent/sound on clients
 
 TITLE="${PROJECT_NAME} ${NEW_VERSION} built"
 BODY=$(printf '%s\n' "${BUILT_REPOS[@]}")

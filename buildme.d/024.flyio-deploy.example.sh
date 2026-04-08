@@ -5,7 +5,7 @@
 # this works best when your registry is public or Fly has pull access.
 # Docs: https://fly.io/docs/flyctl/
 
-FLY_APP="${PROJECT_NAME}"   # fly app name (matches fly.toml app = "...")
+FLY_APP="${FLY_APP:-${PROJECT_NAME}}"   # fly app name (matches fly.toml app = "...")
 FLY_CONFIG="${GIT_ROOT}/fly.toml"
 
 if ! command -v flyctl &>/dev/null; then

@@ -3,8 +3,8 @@
 # SSHes into a remote host and runs docker/podman pull + restart.
 # Requires passwordless SSH key auth to the target host.
 
-REMOTE_HOST="user@your-server.example.com"
-REMOTE_COMPOSE_DIR="/opt/stacks/${PROJECT_NAME}"
+REMOTE_HOST="${REMOTE_HOST:-user@your-server.example.com}"
+REMOTE_COMPOSE_DIR="${REMOTE_COMPOSE_DIR:-/opt/stacks/${PROJECT_NAME}}"
 
 if [[ "$SKIP_PUSH" == true ]]; then
     echo -e "${YELLOW}⏭️  Skipping remote redeploy (push was skipped).${RESET}"

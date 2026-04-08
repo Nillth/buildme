@@ -4,7 +4,7 @@
 # summarising commits since the previous tag.
 # Set RELEASE_HOST to your Gitea instance or "https://api.github.com".
 
-RELEASE_HOST="https://api.github.com"    # GitHub default; for Gitea use e.g. https://git.example.com
+RELEASE_HOST="${RELEASE_HOST:-https://api.github.com}"    # GitHub default; for Gitea use e.g. https://git.example.com
 RELEASE_TOKEN="${GITEA_TOKEN:-${GITHUB_TOKEN:-}}"  # env var: GITEA_TOKEN or GITHUB_TOKEN
 RELEASE_OWNER="$GIT_OWNER"
 RELEASE_REPO="$PROJECT_NAME"

@@ -3,7 +3,7 @@
 # Polls a URL after deployment until it returns HTTP 200 or times out.
 # Useful as a final gate to confirm the new image is serving traffic.
 
-HEALTH_URL="https://your-app.example.com/health"
+HEALTH_URL="${HEALTH_URL:-https://your-app.example.com/health}"
 MAX_WAIT=120   # seconds
 INTERVAL=5     # seconds between polls
 

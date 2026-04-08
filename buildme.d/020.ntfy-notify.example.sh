@@ -4,9 +4,9 @@
 # Great for getting a phone notification when a build completes.
 # Docs: https://docs.ntfy.sh/publish/
 
-NTFY_URL="https://ntfy.sh/your-topic"   # or https://your-ntfy.example.com/your-topic
-NTFY_TOKEN=""                            # leave empty if topic is public
-NTFY_PRIORITY="default"                  # min, low, default, high, urgent
+NTFY_URL="${NTFY_URL:-https://ntfy.sh/your-topic}"   # or https://your-ntfy.example.com/your-topic
+NTFY_TOKEN="${NTFY_TOKEN:-}"                            # leave empty if topic is public
+NTFY_PRIORITY="${NTFY_PRIORITY:-default}"                  # min, low, default, high, urgent
 
 TITLE="${PROJECT_NAME} ${NEW_VERSION} deployed"
 BODY=$(printf '%s\n' "${BUILT_REPOS[@]}")

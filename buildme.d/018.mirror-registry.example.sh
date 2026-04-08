@@ -4,8 +4,8 @@
 # Useful for mirroring to Docker Hub, GHCR, or an air-gapped registry
 # in addition to your primary registry.
 
-MIRROR_REGISTRY="ghcr.io"     # e.g. docker.io, ghcr.io, registry.example.com
-MIRROR_OWNER="your-org"       # owner/namespace on the mirror
+MIRROR_REGISTRY="${MIRROR_REGISTRY:-ghcr.io}"     # e.g. docker.io, ghcr.io, registry.example.com
+MIRROR_OWNER="${MIRROR_OWNER:-your-org}"       # owner/namespace on the mirror
 
 if [[ "$SKIP_PUSH" == true ]]; then
     echo -e "${YELLOW}⏭️  Skipping mirror push (push was skipped).${RESET}"

@@ -4,7 +4,7 @@
 # Create a webhook in Portainer: Stacks → your stack → Webhook → Enable
 # Docs: https://docs.portainer.io/user/docker/stacks/webhooks
 
-PORTAINER_WEBHOOK_URL="https://your-portainer.example.com/api/stacks/webhooks/YOUR-WEBHOOK-UUID"
+PORTAINER_WEBHOOK_URL="${PORTAINER_WEBHOOK_URL:-https://your-portainer.example.com/api/stacks/webhooks/YOUR-WEBHOOK-UUID}"
 
 if [[ "$SKIP_PUSH" == true ]]; then
     echo -e "${YELLOW}⏭️  Skipping Portainer webhook (push was skipped).${RESET}"

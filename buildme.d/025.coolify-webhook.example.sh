@@ -4,7 +4,7 @@
 # Create the webhook in Coolify: Application → Webhooks → Deploy Webhook
 # Docs: https://coolify.io/docs/webhooks
 
-COOLIFY_WEBHOOK_URL="https://your-coolify.example.com/api/v1/deploy?uuid=YOUR-APP-UUID&force=false"
+COOLIFY_WEBHOOK_URL="${COOLIFY_WEBHOOK_URL:-https://your-coolify.example.com/api/v1/deploy?uuid=YOUR-APP-UUID&force=false}"
 COOLIFY_TOKEN="${COOLIFY_TOKEN:-}"   # env var: COOLIFY_TOKEN (from Coolify → Security → API tokens)
 
 if [[ -z "$COOLIFY_TOKEN" ]]; then

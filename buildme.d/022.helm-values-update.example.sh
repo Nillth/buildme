@@ -3,10 +3,10 @@
 # Updates image tags in a Helm values.yaml file and optionally runs
 # helm upgrade to apply the change to a cluster.
 
-HELM_VALUES="${GIT_ROOT}/helm/values.yaml"
-HELM_RELEASE="${PROJECT_NAME}"
-HELM_NAMESPACE="default"
-HELM_CHART_DIR="${GIT_ROOT}/helm"
+HELM_VALUES="${HELM_VALUES:-${GIT_ROOT}/helm/values.yaml}"
+HELM_RELEASE="${HELM_RELEASE:-${PROJECT_NAME}}"
+HELM_NAMESPACE="${HELM_NAMESPACE:-default}"
+HELM_CHART_DIR="${HELM_CHART_DIR:-${GIT_ROOT}/helm}"
 AUTO_UPGRADE=false   # set true to run 'helm upgrade' after patching values
 
 if [[ ! -f "$HELM_VALUES" ]]; then

@@ -5,11 +5,11 @@
 # GitOps promotion workflow after images are pushed.
 
 # Gitea / GitHub repository dispatch
-DISPATCH_HOST="https://git.nillth.net"    # or https://api.github.com
+DISPATCH_HOST="${DISPATCH_HOST:-https://api.github.com}"   # or https://git.example.com for Gitea
 DISPATCH_TOKEN="${GITEA_TOKEN:-${GITHUB_TOKEN:-}}"
 DISPATCH_OWNER="$GIT_OWNER"
 DISPATCH_REPO="$PROJECT_NAME"
-DISPATCH_EVENT="image-published"           # must match 'on.repository_dispatch.types' in workflow
+DISPATCH_EVENT="${DISPATCH_EVENT:-image-published}"           # must match 'on.repository_dispatch.types' in workflow
 
 if [[ -z "$DISPATCH_TOKEN" ]]; then
     echo -e "${YELLOW}⚠️  No GITEA_TOKEN or GITHUB_TOKEN set. Skipping pipeline trigger.${RESET}"

@@ -1,0 +1,105 @@
+#!/bin/bash
+# buildme.conf.example
+# Central configuration for buildme hooks.
+#
+# Copy this file to buildme.conf (in the same directory as buildme.sh)
+# and fill in the values you need. Only configure the hooks you actually use.
+# Values set here take precedence over the defaults inside each hook script.
+#
+# Lines beginning with # are comments. Uncomment a line to activate it.
+
+# ──────────────────────────────────────────────────────────────
+# Notifications — Gotify
+# ──────────────────────────────────────────────────────────────
+#GOTIFY_URL="https://gotify.example.com"
+#GOTIFY_TOKEN="your-app-token"
+#GOTIFY_PRIORITY="5"                   # 1 (min) – 10 (max); ≥8 = urgent/sound
+
+# ──────────────────────────────────────────────────────────────
+# Notifications — ntfy
+# ──────────────────────────────────────────────────────────────
+#NTFY_URL="https://ntfy.sh/your-topic" # or https://your-ntfy.example.com/your-topic
+#NTFY_TOKEN=""                          # leave empty for public topics
+#NTFY_PRIORITY="default"               # min, low, default, high, urgent
+
+# ──────────────────────────────────────────────────────────────
+# Notifications — Slack
+# ──────────────────────────────────────────────────────────────
+#SLACK_WEBHOOK_URL="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+#SLACK_CHANNEL="#deployments"
+#SLACK_USERNAME="buildme"
+
+# ──────────────────────────────────────────────────────────────
+# Notifications — Microsoft Teams
+# ──────────────────────────────────────────────────────────────
+#TEAMS_WEBHOOK_URL="https://outlook.office.com/webhook/YOUR/WEBHOOK/URL"
+
+# ──────────────────────────────────────────────────────────────
+# Notifications — Discord
+# ──────────────────────────────────────────────────────────────
+#DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/YOUR/WEBHOOK"
+
+# ──────────────────────────────────────────────────────────────
+# Deployment — SSH remote redeploy
+# ──────────────────────────────────────────────────────────────
+#REMOTE_HOST="user@your-server.example.com"
+#REMOTE_COMPOSE_DIR="/opt/stacks/${PROJECT_NAME}"
+
+# ──────────────────────────────────────────────────────────────
+# Deployment — Watchtower
+# ──────────────────────────────────────────────────────────────
+#WATCHTOWER_URL="http://your-host:8080/v1/update"
+#WATCHTOWER_TOKEN="your-watchtower-token"
+
+# ──────────────────────────────────────────────────────────────
+# Deployment — Portainer
+# ──────────────────────────────────────────────────────────────
+#PORTAINER_WEBHOOK_URL="https://your-portainer.example.com/api/stacks/webhooks/YOUR-UUID"
+
+# ──────────────────────────────────────────────────────────────
+# Deployment — Coolify
+# ──────────────────────────────────────────────────────────────
+#COOLIFY_WEBHOOK_URL="https://your-coolify.example.com/api/v1/deploy?uuid=YOUR-UUID&force=false"
+# Note: COOLIFY_TOKEN must be set as an environment variable (not stored here)
+
+# ──────────────────────────────────────────────────────────────
+# Deployment — Fly.io
+# ──────────────────────────────────────────────────────────────
+#FLY_APP="${PROJECT_NAME}"             # fly app name (matches fly.toml app = "...")
+
+# ──────────────────────────────────────────────────────────────
+# Deployment — Azure Container Apps
+# ──────────────────────────────────────────────────────────────
+#AZ_APP_NAME="${PROJECT_NAME}"
+#AZ_RESOURCE_GROUP="my-resource-group"
+
+# ──────────────────────────────────────────────────────────────
+# Releases — GitHub / Gitea
+# ──────────────────────────────────────────────────────────────
+#RELEASE_HOST="https://api.github.com"  # or https://git.example.com for Gitea
+# Note: GITEA_TOKEN / GITHUB_TOKEN must be set as environment variables
+
+# ──────────────────────────────────────────────────────────────
+# CI/CD — Trigger pipeline dispatch
+# ──────────────────────────────────────────────────────────────
+#DISPATCH_HOST="https://api.github.com"  # or https://git.example.com for Gitea
+#DISPATCH_EVENT="image-published"         # must match on.repository_dispatch.types in workflow
+# Note: GITEA_TOKEN / GITHUB_TOKEN must be set as environment variables
+
+# ──────────────────────────────────────────────────────────────
+# Registry — Mirror to secondary registry
+# ──────────────────────────────────────────────────────────────
+#MIRROR_REGISTRY="ghcr.io"              # e.g. docker.io, ghcr.io, registry.example.com
+#MIRROR_OWNER="your-org"                # owner/namespace on the mirror
+
+# ──────────────────────────────────────────────────────────────
+# Testing — Health check
+# ──────────────────────────────────────────────────────────────
+#HEALTH_URL="https://your-app.example.com/health"
+
+# ──────────────────────────────────────────────────────────────
+# Helm — Values update & rollout
+# ──────────────────────────────────────────────────────────────
+#HELM_NAMESPACE="default"
+#HELM_RELEASE="${PROJECT_NAME}"
+#HELM_CHART_DIR="${GIT_ROOT}/helm"

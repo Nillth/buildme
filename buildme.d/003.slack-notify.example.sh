@@ -3,9 +3,9 @@
 # Posts a build completion message to a Slack channel via Incoming Webhook.
 # Docs: https://api.slack.com/messaging/webhooks
 
-SLACK_WEBHOOK_URL="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
-SLACK_CHANNEL="#deployments"   # informational only, set in Slack app config
-SLACK_USERNAME="buildme"
+SLACK_WEBHOOK_URL="${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/YOUR/WEBHOOK/URL}"
+SLACK_CHANNEL="${SLACK_CHANNEL:-#deployments}"   # informational only, set in Slack app config
+SLACK_USERNAME="${SLACK_USERNAME:-buildme}"
 
 IMAGE_LIST=$(printf '`%s`\n' "${BUILT_REPOS[@]}")
 

@@ -3,7 +3,7 @@
 # Posts a build completion card to a Microsoft Teams channel via Incoming Webhook.
 # Docs: https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook
 
-TEAMS_WEBHOOK_URL="https://outlook.office.com/webhook/YOUR/WEBHOOK/URL"
+TEAMS_WEBHOOK_URL="${TEAMS_WEBHOOK_URL:-https://outlook.office.com/webhook/YOUR/WEBHOOK/URL}"
 
 IMAGE_LIST=$(printf '<li>%s</li>' "${BUILT_REPOS[@]}")
 
