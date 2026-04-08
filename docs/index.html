@@ -418,126 +418,75 @@ document.querySelectorAll('#owner,#repo,#branch').forEach(el => {
 });
 updateCurl();
 
-/* ── Configuration variable definitions (parsed from buildme.conf.example) ── */
-const CONFIG_SECTIONS = [
-  {
-    title: 'Notifications — Gotify',
-    vars: [
-      { name: 'GOTIFY_URL',      placeholder: 'https://gotify.example.com',  hint: '' },
-      { name: 'GOTIFY_TOKEN',    placeholder: 'your-app-token',              hint: '' },
-      { name: 'GOTIFY_PRIORITY', placeholder: '5',                           hint: '1 (min) – 10 (max); >=8 = urgent/sound' },
-    ]
-  },
-  {
-    title: 'Notifications — ntfy',
-    vars: [
-      { name: 'NTFY_URL',      placeholder: 'https://ntfy.sh/your-topic',  hint: 'or https://your-ntfy.example.com/your-topic' },
-      { name: 'NTFY_TOKEN',    placeholder: '',                             hint: 'leave empty for public topics' },
-      { name: 'NTFY_PRIORITY', placeholder: 'default',                      hint: 'min, low, default, high, urgent' },
-    ]
-  },
-  {
-    title: 'Notifications — Slack',
-    vars: [
-      { name: 'SLACK_WEBHOOK_URL', placeholder: 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL', hint: '' },
-      { name: 'SLACK_CHANNEL',     placeholder: '#deployments',                                      hint: '' },
-      { name: 'SLACK_USERNAME',    placeholder: 'buildme',                                           hint: '' },
-    ]
-  },
-  {
-    title: 'Notifications — Microsoft Teams',
-    vars: [
-      { name: 'TEAMS_WEBHOOK_URL', placeholder: 'https://outlook.office.com/webhook/YOUR/WEBHOOK/URL', hint: '' },
-    ]
-  },
-  {
-    title: 'Notifications — Discord',
-    vars: [
-      { name: 'DISCORD_WEBHOOK_URL', placeholder: 'https://discord.com/api/webhooks/YOUR/WEBHOOK', hint: '' },
-    ]
-  },
-  {
-    title: 'Deployment — SSH remote redeploy',
-    vars: [
-      { name: 'REMOTE_HOST',        placeholder: 'user@your-server.example.com',     hint: '' },
-      { name: 'REMOTE_COMPOSE_DIR', placeholder: '/opt/stacks/${PROJECT_NAME}',       hint: '' },
-    ]
-  },
-  {
-    title: 'Deployment — Watchtower',
-    vars: [
-      { name: 'WATCHTOWER_URL',   placeholder: 'http://your-host:8080/v1/update', hint: '' },
-      { name: 'WATCHTOWER_TOKEN', placeholder: 'your-watchtower-token',            hint: '' },
-    ]
-  },
-  {
-    title: 'Deployment — Portainer',
-    vars: [
-      { name: 'PORTAINER_WEBHOOK_URL', placeholder: 'https://your-portainer.example.com/api/stacks/webhooks/YOUR-UUID', hint: '' },
-    ]
-  },
-  {
-    title: 'Deployment — Coolify',
-    vars: [
-      { name: 'COOLIFY_WEBHOOK_URL', placeholder: 'https://your-coolify.example.com/api/v1/deploy?uuid=YOUR-UUID&force=false', hint: '' },
-    ],
-    envNote: 'COOLIFY_TOKEN must be set as an environment variable (not stored in config)'
-  },
-  {
-    title: 'Deployment — Fly.io',
-    vars: [
-      { name: 'FLY_APP', placeholder: '${PROJECT_NAME}', hint: 'fly app name (matches fly.toml app = "...")' },
-    ]
-  },
-  {
-    title: 'Deployment — Azure Container Apps',
-    vars: [
-      { name: 'AZ_APP_NAME',       placeholder: '${PROJECT_NAME}',  hint: '' },
-      { name: 'AZ_RESOURCE_GROUP', placeholder: 'my-resource-group', hint: '' },
-    ]
-  },
-  {
-    title: 'Releases — GitHub / Gitea',
-    vars: [
-      { name: 'RELEASE_HOST', placeholder: 'https://api.github.com', hint: 'or https://git.example.com for Gitea' },
-    ],
-    envNote: 'GITEA_TOKEN / GITHUB_TOKEN must be set as environment variables'
-  },
-  {
-    title: 'CI/CD — Trigger pipeline dispatch',
-    vars: [
-      { name: 'DISPATCH_HOST',  placeholder: 'https://api.github.com', hint: 'or https://git.example.com for Gitea' },
-      { name: 'DISPATCH_EVENT', placeholder: 'image-published',         hint: 'must match on.repository_dispatch.types in workflow' },
-    ],
-    envNote: 'GITEA_TOKEN / GITHUB_TOKEN must be set as environment variables'
-  },
-  {
-    title: 'Registry — Mirror to secondary registry',
-    vars: [
-      { name: 'MIRROR_REGISTRY', placeholder: 'ghcr.io',   hint: 'e.g. docker.io, ghcr.io, registry.example.com' },
-      { name: 'MIRROR_OWNER',    placeholder: 'your-org',   hint: 'owner/namespace on the mirror' },
-    ]
-  },
-  {
-    title: 'Testing — Health check',
-    vars: [
-      { name: 'HEALTH_URL', placeholder: 'https://your-app.example.com/health', hint: '' },
-    ]
-  },
-  {
-    title: 'Helm — Values update & rollout',
-    vars: [
-      { name: 'HELM_NAMESPACE', placeholder: 'default',           hint: '' },
-      { name: 'HELM_RELEASE',   placeholder: '${PROJECT_NAME}',   hint: '' },
-      { name: 'HELM_CHART_DIR', placeholder: '${GIT_ROOT}/helm',  hint: '' },
-    ]
-  },
-];
+/* ── Parse buildme.conf.example into CONFIG_SECTIONS ── */
+// Section header:  # ─── Title ───
+// Variable line:   #VAR="value"              # inline comment
+// Note line:       # Note: some env note
+// Blank / other comment lines are skipped
 
-/* ── Render config groups ── */
-(function renderConfigGroups() {
+function parseConfExample(text) {
+  const sections = [];
+  let current = null;
+  const sectionRe = /^#\s*─+\s*(.+?)\s*─*\s*$/;
+  const varRe     = /^#([A-Z_][A-Z0-9_]*)="([^"]*)"(?:\s+#\s*(.*))?$/;
+  const noteRe    = /^#\s*Note:\s*(.+)$/;
+
+  for (const raw of text.split('\n')) {
+    const line = raw.trimEnd();
+
+    const sm = line.match(sectionRe);
+    if (sm) {
+      current = { title: sm[1].trim(), vars: [] };
+      sections.push(current);
+      continue;
+    }
+
+    if (!current) continue;
+
+    const nm = line.match(noteRe);
+    if (nm) {
+      current.envNote = nm[1].trim();
+      continue;
+    }
+
+    const vm = line.match(varRe);
+    if (vm) {
+      current.vars.push({
+        name: vm[1],
+        placeholder: vm[2],
+        hint: vm[3] ? vm[3].trim() : ''
+      });
+    }
+  }
+  return sections;
+}
+
+let CONFIG_SECTIONS = [];
+
+function getConfExampleUrl() {
+  const v = getValues();
+  return `https://raw.githubusercontent.com/${v.owner}/${v.repo}/${v.branch}/buildme.conf.example`;
+}
+
+async function loadAndRenderConfig() {
   const container = document.getElementById('configGroups');
-  CONFIG_SECTIONS.forEach((section, si) => {
+  container.innerHTML = '';
+  try {
+    const resp = await fetch(getConfExampleUrl());
+    if (!resp.ok) throw new Error(resp.status);
+    const text = await resp.text();
+    CONFIG_SECTIONS = parseConfExample(text);
+  } catch (e) {
+    container.innerHTML = '<p style="color:var(--red);font-family:var(--mono);font-size:.82rem;">Could not fetch buildme.conf.example — check owner/repo/branch above.</p>';
+    return;
+  }
+  renderConfigGroups();
+}
+
+function renderConfigGroups() {
+  const container = document.getElementById('configGroups');
+  container.innerHTML = '';
+  CONFIG_SECTIONS.forEach(section => {
     const group = document.createElement('div');
     group.className = 'config-group';
 
@@ -581,7 +530,10 @@ const CONFIG_SECTIONS = [
     group.appendChild(body);
     container.appendChild(group);
   });
-})();
+}
+
+/* Load config on page load */
+loadAndRenderConfig();
 
 /* ── Generate buildme.conf content ── */
 function generateConf() {
