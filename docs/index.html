@@ -83,14 +83,32 @@
   /* generator card */
   .card{
     background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-    padding:2rem;max-width:560px;width:100%;text-align:left;
+    max-width:680px;width:100%;text-align:left;
     box-shadow:0 4px 40px rgba(0,0,0,.4);
     animation:fadeUp .7s .35s ease-out both;
+    overflow:hidden;
   }
-  .card h2{
-    font-family:var(--mono);font-size:.8rem;letter-spacing:.1em;
-    text-transform:uppercase;color:var(--accent);margin-bottom:1.25rem;
+
+  /* tabs */
+  .tabs{
+    display:flex;border-bottom:1px solid var(--border);
   }
+  .tab{
+    flex:1;padding:.85rem 1rem;
+    font-family:var(--mono);font-size:.78rem;font-weight:600;
+    letter-spacing:.06em;text-transform:uppercase;text-align:center;
+    color:var(--text-dim);background:transparent;
+    border:none;border-bottom:2px solid transparent;
+    cursor:pointer;transition:color .2s,border-color .2s,background .2s;
+  }
+  .tab:hover{color:var(--text);background:rgba(255,255,255,.02)}
+  .tab.active{
+    color:var(--accent);border-bottom-color:var(--accent);
+    background:var(--accent-glow);
+  }
+  .tab-panel{display:none;padding:1.75rem}
+  .tab-panel.active{display:block}
+
   .field{margin-bottom:1rem}
   .field label{
     display:block;font-size:.8rem;font-weight:500;color:var(--text-dim);
@@ -156,30 +174,14 @@
   }
   .preview pre .hl{color:var(--accent)}
 
-  /* how it works */
-  .section{max-width:800px;margin:0 auto;padding:4rem 1.5rem}
-  .section h2{
-    font-family:var(--sans);font-weight:700;font-size:1.8rem;color:var(--text-bright);
-    margin-bottom:2rem;text-align:center;
-  }
-
-  /* config section — wider */
-  .section-wide{max-width:900px;margin:0 auto;padding:4rem 1.5rem}
-  .section-wide h2{
-    font-family:var(--sans);font-weight:700;font-size:1.8rem;color:var(--text-bright);
-    margin-bottom:.5rem;text-align:center;
-  }
-  .section-wide .section-sub{
-    text-align:center;color:var(--text-dim);font-size:.9rem;margin-bottom:2rem;
-  }
-
+  /* config groups */
   .config-group{
-    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-    margin-bottom:1rem;overflow:hidden;
+    background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);
+    margin-bottom:.75rem;overflow:hidden;
   }
   .config-group-header{
     display:flex;align-items:center;gap:.75rem;
-    padding:1rem 1.25rem;cursor:pointer;user-select:none;
+    padding:.85rem 1rem;cursor:pointer;user-select:none;
     transition:background .15s;
   }
   .config-group-header:hover{background:rgba(255,255,255,.02)}
@@ -194,13 +196,13 @@
   }
   .config-group-header .group-count{
     font-family:var(--mono);font-size:.65rem;color:var(--text-dim);
-    background:var(--bg);border-radius:999px;padding:.15rem .5rem;
+    background:var(--surface);border-radius:999px;padding:.15rem .5rem;
   }
   .config-group-body{
     max-height:0;overflow:hidden;transition:max-height .3s ease;
   }
   .config-group-body.open{max-height:600px}
-  .config-group-body-inner{padding:0 1.25rem 1.25rem}
+  .config-group-body-inner{padding:0 1rem 1rem}
 
   .config-field{margin-bottom:.85rem}
   .config-field:last-child{margin-bottom:0}
@@ -208,11 +210,6 @@
     display:flex;align-items:center;gap:.5rem;
     font-family:var(--mono);font-size:.78rem;font-weight:600;color:var(--text);
     margin-bottom:.3rem;
-  }
-  .config-field label .env-badge{
-    font-size:.6rem;font-weight:400;color:var(--yellow);
-    background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);
-    border-radius:4px;padding:.1rem .4rem;letter-spacing:.04em;
   }
   .config-field .hint{
     font-size:.7rem;color:var(--text-dim);margin-bottom:.3rem;
@@ -228,10 +225,23 @@
   .config-field input:focus{border-color:var(--accent)}
   .config-field input::placeholder{color:var(--text-dim);opacity:.4}
 
-  /* config download bar */
-  .config-download{
-    display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;
-    margin-top:1.5rem;
+  .config-sub{
+    color:var(--text-dim);font-size:.8rem;margin-bottom:1.25rem;
+  }
+  .config-sub code{color:var(--text);font-family:var(--mono);font-size:.75rem}
+
+  /* shared download bar at bottom of card */
+  .card-footer{
+    border-top:1px solid var(--border);
+    padding:1.25rem 1.75rem;
+    display:flex;gap:.75rem;flex-wrap:wrap;
+  }
+
+  /* how it works */
+  .section{max-width:800px;margin:0 auto;padding:4rem 1.5rem}
+  .section h2{
+    font-family:var(--sans);font-weight:700;font-size:1.8rem;color:var(--text-bright);
+    margin-bottom:2rem;text-align:center;
   }
 
   .steps{
@@ -261,6 +271,8 @@
     .field-row{grid-template-columns:1fr}
     .actions{flex-direction:column}
     .btn{width:100%;justify-content:center}
+    .card-footer{flex-direction:column}
+    .card-footer .btn{width:100%;justify-content:center}
   }
 </style>
 </head>
@@ -283,51 +295,57 @@
   </div>
 
   <div class="card">
-    <h2>&#9654; Generate your script</h2>
-    <div class="field-row">
-      <div class="field">
-        <label>GitHub Owner / Org</label>
-        <input type="text" id="owner" placeholder="Nillth" />
-      </div>
-      <div class="field">
-        <label>Repository</label>
-        <input type="text" id="repo" placeholder="buildme" />
-      </div>
-    </div>
-    <div class="field">
-      <label>Branch</label>
-      <input type="text" id="branch" value="main" />
+    <div class="tabs">
+      <button class="tab active" data-tab="script">Script</button>
+      <button class="tab" data-tab="configure">Configure</button>
     </div>
 
-    <div class="actions">
+    <!-- Tab 1: Script -->
+    <div class="tab-panel active" id="panel-script">
+      <div class="field-row">
+        <div class="field">
+          <label>GitHub Owner / Org</label>
+          <input type="text" id="owner" placeholder="Nillth" />
+        </div>
+        <div class="field">
+          <label>Repository</label>
+          <input type="text" id="repo" placeholder="buildme" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Branch</label>
+        <input type="text" id="branch" value="main" />
+      </div>
+
+      <div class="oneliner" id="oneliner" onclick="copyCurl()">
+        <span id="curlText"></span>
+        <span class="copied" id="copiedBadge">copied!</span>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="togglePreview()">Preview</button>
+        <button class="btn btn-secondary" onclick="copyCurl()">Copy curl</button>
+      </div>
+
+      <div class="preview" id="preview">
+        <pre id="previewCode"></pre>
+      </div>
+    </div>
+
+    <!-- Tab 2: Configure -->
+    <div class="tab-panel" id="panel-configure">
+      <p class="config-sub">Set variables for your <code>buildme.conf</code>. Unconfigured values are included as commented lines.</p>
+      <div id="configGroups"></div>
+    </div>
+
+    <!-- Shared footer -->
+    <div class="card-footer">
       <button class="btn btn-primary" onclick="downloadAll()">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         Download buildme.sh + conf
       </button>
-      <button class="btn btn-secondary" onclick="togglePreview()">Preview</button>
+      <button class="btn btn-secondary" onclick="downloadConfOnly()">Download conf only</button>
     </div>
-
-    <div class="oneliner" id="oneliner" onclick="copyCurl()">
-      <span id="curlText"></span>
-      <span class="copied" id="copiedBadge">copied!</span>
-    </div>
-
-    <div class="preview" id="preview">
-      <pre id="previewCode"></pre>
-    </div>
-  </div>
-</section>
-
-<section class="section-wide" id="configure">
-  <h2>Configure</h2>
-  <p class="section-sub">Set the variables for your <code>buildme.conf</code>. Only configured values are included in the download.</p>
-  <div id="configGroups"></div>
-  <div class="config-download">
-    <button class="btn btn-primary" onclick="downloadAll()">
-      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-      Download buildme.sh + conf
-    </button>
-    <button class="btn btn-secondary" onclick="downloadConfOnly()">Download buildme.conf only</button>
   </div>
 </section>
 
@@ -362,10 +380,18 @@
 </footer>
 
 <script>
+/* ── Tabs ── */
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
 /* ── Detect owner/repo from the page's own hosting URL ── */
 (function detectDefaults() {
-  // GitHub Pages: <owner>.github.io/<repo>/
-  // Also works for custom domains if path contains the repo
   const loc = window.location;
   const ghPages = loc.hostname.match(/^([^.]+)\.github\.io$/);
   if (ghPages) {
@@ -375,7 +401,6 @@
     if (repo)  document.getElementById('repo').value = repo;
     return;
   }
-  // Fallback: check for meta tag (forks can set this)
   const meta = document.querySelector('meta[name="buildme-repo"]');
   if (meta) {
     const parts = meta.content.split('/');
@@ -414,16 +439,11 @@ function updateFooter() {
 }
 
 document.querySelectorAll('#owner,#repo,#branch').forEach(el => {
-  el.addEventListener('input', () => { updateCurl(); updateFooter(); });
+  el.addEventListener('input', () => { updateCurl(); updateFooter(); loadAndRenderConfig(); });
 });
 updateCurl();
 
 /* ── Parse buildme.conf.example into CONFIG_SECTIONS ── */
-// Section header:  # ─── Title ───
-// Variable line:   #VAR="value"              # inline comment
-// Note line:       # Note: some env note
-// Blank / other comment lines are skipped
-
 function parseConfExample(text) {
   const sections = [];
   let current = null;
@@ -462,6 +482,7 @@ function parseConfExample(text) {
 }
 
 let CONFIG_SECTIONS = [];
+let confLoadCache = { key: '', sections: [] };
 
 function getConfExampleUrl() {
   const v = getValues();
@@ -470,14 +491,20 @@ function getConfExampleUrl() {
 
 async function loadAndRenderConfig() {
   const container = document.getElementById('configGroups');
+  const url = getConfExampleUrl();
+
+  // Skip re-fetch if owner/repo/branch hasn't changed
+  if (url === confLoadCache.key) return;
+
   container.innerHTML = '';
   try {
-    const resp = await fetch(getConfExampleUrl());
+    const resp = await fetch(url);
     if (!resp.ok) throw new Error(resp.status);
     const text = await resp.text();
     CONFIG_SECTIONS = parseConfExample(text);
+    confLoadCache = { key: url, sections: CONFIG_SECTIONS };
   } catch (e) {
-    container.innerHTML = '<p style="color:var(--red);font-family:var(--mono);font-size:.82rem;">Could not fetch buildme.conf.example — check owner/repo/branch above.</p>';
+    container.innerHTML = '<p style="color:var(--red);font-family:var(--mono);font-size:.82rem;">Could not fetch buildme.conf.example — check owner/repo/branch.</p>';
     return;
   }
   renderConfigGroups();
@@ -585,7 +612,6 @@ async function downloadAll() {
     triggerDownload('buildme.sh', scriptText, 'application/x-shellscript');
 
     const conf = generateConf();
-    // Small delay so browser handles two downloads
     setTimeout(() => triggerDownload('buildme.conf', conf, 'application/x-shellscript'), 300);
   } catch (e) {
     alert('Could not fetch buildme.sh from GitHub. Check your connection and try again.');
