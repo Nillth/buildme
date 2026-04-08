@@ -137,8 +137,8 @@ if [[ "$DO_EXTENSIONS" == true ]]; then
         [[ "$name" == "001.example.sh" ]] && continue
         EXT_NAMES+=("$name")
     done < <(echo "$API_RESPONSE" \
-        | grep -o '"name":"[^"]*\.example\.sh"' \
-        | sed 's/"name":"//;s/"$//' \
+        | grep -o '"name": *"[^"]*\.example\.sh"' \
+        | sed 's/"name": *"//;s/"$//' \
         | sort)
 
     if [[ ${#EXT_NAMES[@]} -eq 0 ]]; then
@@ -146,18 +146,33 @@ if [[ "$DO_EXTENSIONS" == true ]]; then
         exit 1
     fi
 
+    # Determine the next auto-assign number: highest existing active hook + 10, rounded up to 10
+    mkdir -p "$HOOK_INSTALL_DIR"
+    NEXT_NUM=10
+    HIGHEST=$(find "$HOOK_INSTALL_DIR" -maxdepth 1 -name '[0-9]*.sh' ! -name '*.example.sh' \
+        | sed 's|.*/||;s/[^0-9].*//' | sort -n | tail -1)
+    if [[ -n "$HIGHEST" && "$HIGHEST" -gt 0 ]]; then
+        NEXT_NUM=$(( (HIGHEST / 10 + 1) * 10 ))
+    fi
+
+    # Helper: check if a base name is already installed (ignores the NNN. prefix)
+    _ext_installed() {
+        local base="$1"
+        find "$HOOK_INSTALL_DIR" -maxdepth 1 \
+            \( -name "*.${base}.sh" -o -name "*.${base}.example.sh" \) 2>/dev/null \
+            | grep -q .
+    }
+
     # Display numbered menu
     echo ""
     echo -e "${BLUE}Available extensions:${RESET}"
     echo ""
     for i in "${!EXT_NAMES[@]}"; do
         name="${EXT_NAMES[$i]}"
-        # Pretty label: strip leading number and .example.sh suffix
-        pretty=$(echo "$name" | sed 's/^[0-9]*\.//;s/\.example\.sh$//')
-        # Mark already-installed ones
+        base=$(echo "$name" | sed 's/^[0-9]*\.//;s/\.example\.sh$//')
         status=""
-        [[ -f "${HOOK_INSTALL_DIR}/${name}" ]] && status=" ${GREEN}[installed]${RESET}"
-        printf "  [%2d]  %-45s%b\n" "$((i+1))" "$pretty" "$status"
+        _ext_installed "$base" && status=" ${GREEN}[installed]${RESET}"
+        printf "  [%2d]  %-45s%b\n" "$((i+1))" "$base" "$status"
     done
     echo ""
     echo -e "Enter numbers to install (space or comma-separated), or ${GREEN}all${RESET}, or ${YELLOW}q${RESET} to quit:"
@@ -186,27 +201,34 @@ if [[ "$DO_EXTENSIONS" == true ]]; then
         exit 0
     fi
 
-    mkdir -p "$HOOK_INSTALL_DIR"
-
     for idx in "${SELECTED_INDICES[@]}"; do
         name="${EXT_NAMES[$idx]}"
-        dest="${HOOK_INSTALL_DIR}/${name}"
+        base=$(echo "$name" | sed 's/^[0-9]*\.//;s/\.example\.sh$//')
         url="${EXT_RAW_BASE}/${name}"
-        if [[ -f "$dest" ]]; then
-            echo -e "${YELLOW}⏭️  ${name} already exists — skipping (delete it first to re-download).${RESET}"
+
+        if _ext_installed "$base"; then
+            echo -e "${YELLOW}⏭️  ${base} already installed — skipping.${RESET}"
             continue
         fi
-        echo -e "${BLUE}⬇️  Downloading ${name}...${RESET}"
-        if curl -fsSL -o "$dest" "$url"; then
-            chmod +x "$dest"
-            echo -e "${GREEN}✅ buildme.d/${name}${RESET}"
+
+        NUM=$(printf '%03d' "$NEXT_NUM")
+        NEXT_NUM=$((NEXT_NUM + 10))
+        DEST_ACTIVE="${HOOK_INSTALL_DIR}/${NUM}.${base}.sh"
+        DEST_EXAMPLE="${HOOK_INSTALL_DIR}/${NUM}.${base}.example.sh"
+
+        echo -e "${BLUE}⬇️  Installing ${base}...${RESET}"
+        if curl -fsSL -o "$DEST_ACTIVE" "$url" && cp "$DEST_ACTIVE" "$DEST_EXAMPLE"; then
+            chmod +x "$DEST_ACTIVE"
+            echo -e "${GREEN}✅ buildme.d/${NUM}.${base}.sh${RESET} (active)"
+            echo -e "   ${BLUE}buildme.d/${NUM}.${base}.example.sh${RESET} (reference copy)"
         else
-            echo -e "${RED}❌ Failed to download ${name}.${RESET}"
+            echo -e "${RED}❌ Failed to download ${base}.${RESET}"
+            rm -f "$DEST_ACTIVE" "$DEST_EXAMPLE"
         fi
     done
 
     echo ""
-    echo -e "${BLUE}Tip: rename any .example.sh → .sh to activate it.${RESET}"
+    echo -e "${BLUE}Hooks are active immediately. The .example.sh copy is your pristine reference.${RESET}"
     exit 0
 fi
 
@@ -249,9 +271,13 @@ fi
 
 DATE_VERSION=$(date +%y%j)  # yyddd format (year + day of year)
 
-if [[ "$DATE_VERSION" != "$CURRENT_DATE" ]]; then
+if [[ "$BUMP_MAJOR" == true || "$DATE_VERSION" != "$CURRENT_DATE" ]]; then
     INCREMENTAL="1"
-    echo -e "${BLUE}📅 New date detected, resetting incremental to 1${RESET}"
+    if [[ "$BUMP_MAJOR" == true ]]; then
+        echo -e "${BLUE}📅 Major version bumped, resetting incremental to 1${RESET}"
+    else
+        echo -e "${BLUE}📅 New date detected, resetting incremental to 1${RESET}"
+    fi
 else
     INCREMENTAL=$((CURRENT_INCREMENTAL + 1))
     echo -e "${BLUE}🔢 Incrementing version from ${CURRENT_INCREMENTAL} to ${INCREMENTAL}${RESET}"
@@ -287,14 +313,17 @@ parse_git_remote() {
     fi
 }
 
+LOCAL_BUILD=false
 REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
 if [[ -n "$REMOTE_URL" ]] && parse_git_remote "$REMOTE_URL"; then
     echo -e "${GREEN}🔗 Registry detected from git remote: ${GIT_SERVER}/${GIT_OWNER}/${PROJECT_NAME}${RESET}"
 else
     PROJECT_NAME=$(basename "$GIT_ROOT")
-    GIT_SERVER="localhost"
-    GIT_OWNER="local"
+    GIT_SERVER=""
+    GIT_OWNER=""
+    LOCAL_BUILD=true
     echo -e "${YELLOW}⚠️  No git remote detected. Using directory name as project: ${PROJECT_NAME}${RESET}"
+    echo -e "${YELLOW}⚠️  Local build — push will be skipped automatically.${RESET}"
 fi
 
 # ──────────────────────────────────────────────────────────────
@@ -381,7 +410,12 @@ fi
 BUILT_REPOS=()
 
 if [[ "$SINGLE_IMAGE" == true ]]; then
-    IMAGE_REPO="${GIT_SERVER}/${GIT_OWNER}/${PROJECT_NAME}"
+    if [[ "$LOCAL_BUILD" == true ]]; then
+        IMAGE_REPO="${PROJECT_NAME,,}"
+    else
+        IMAGE_REPO="${GIT_SERVER}/${GIT_OWNER}/${PROJECT_NAME}"
+        IMAGE_REPO="${IMAGE_REPO,,}"
+    fi
     echo -e "${GREEN}🚀 Building ${PROJECT_NAME}...${RESET}"
     run_cmd $ENGINE build $USERNS_FLAG \
         -t "${IMAGE_REPO}:latest" \
@@ -392,7 +426,12 @@ if [[ "$SINGLE_IMAGE" == true ]]; then
     BUILT_REPOS+=("$IMAGE_REPO")
 else
     for SERVICE in "${SERVICES[@]}"; do
-        IMAGE_REPO="${GIT_SERVER}/${GIT_OWNER}/${PROJECT_NAME}-${SERVICE}"
+        if [[ "$LOCAL_BUILD" == true ]]; then
+            IMAGE_REPO="${PROJECT_NAME,,}-${SERVICE,,}"
+        else
+            IMAGE_REPO="${GIT_SERVER}/${GIT_OWNER}/${PROJECT_NAME}-${SERVICE}"
+            IMAGE_REPO="${IMAGE_REPO,,}"
+        fi
         echo -e "${GREEN}🚀 Building ${SERVICE}...${RESET}"
         run_cmd $ENGINE build $USERNS_FLAG \
             -t "${IMAGE_REPO}:latest" \
@@ -406,8 +445,14 @@ fi
 
 # ──────────────────────────────────────────────────────────────
 # Push images
+if [[ "$LOCAL_BUILD" == true && "$SKIP_PUSH" == false ]]; then
+    SKIP_PUSH=true
+    SKIP_PUSH_REASON="local build — no remote registry"
+elif [[ "$SKIP_PUSH" == true ]]; then
+    SKIP_PUSH_REASON="--skip-push"
+fi
 if [[ "$SKIP_PUSH" == true ]]; then
-    echo -e "${YELLOW}⏭️  Skipping push (--skip-push).${RESET}"
+    echo -e "${YELLOW}⏭️  Skipping push (${SKIP_PUSH_REASON}).${RESET}"
 else
     for IMAGE_REPO in "${BUILT_REPOS[@]}"; do
         echo -e "${GREEN}📤 Pushing ${IMAGE_REPO}...${RESET}"

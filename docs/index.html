@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>buildme — Container Build Automation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0c0e12;--surface:#13161c;--border:#1e222a;
+    --text:#c8cdd5;--text-dim:#6b7280;--text-bright:#f0f2f5;
+    --accent:#22d3ee;--accent-dim:#0e7490;--accent-glow:rgba(34,211,238,.12);
+    --green:#34d399;--yellow:#fbbf24;--red:#f87171;--blue:#60a5fa;
+    --mono:'JetBrains Mono',monospace;--sans:'Outfit',sans-serif;
+    --radius:10px;
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+
+  /* grain overlay */
+  body::before{
+    content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
+    background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+    opacity:.5;
+  }
+
+  /* hero */
+  .hero{
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;padding:3rem 1.5rem;position:relative;text-align:center;
+  }
+  .hero::after{
+    content:'';position:absolute;top:-30%;left:50%;transform:translateX(-50%);
+    width:700px;height:700px;border-radius:50%;
+    background:radial-gradient(circle,var(--accent-glow) 0%,transparent 70%);
+    pointer-events:none;z-index:0;
+  }
+  .hero>*{position:relative;z-index:1}
+
+  .badge{
+    display:inline-flex;align-items:center;gap:.5rem;
+    font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--accent);background:var(--accent-glow);
+    border:1px solid var(--accent-dim);border-radius:999px;padding:.35rem 1rem;
+    margin-bottom:1.5rem;
+    animation:fadeDown .6s ease-out both;
+  }
+  .badge::before{content:'●';font-size:.5rem}
+
+  h1{
+    font-family:var(--sans);font-weight:900;font-size:clamp(2.8rem,7vw,5.5rem);
+    color:var(--text-bright);line-height:1.05;letter-spacing:-.03em;
+    margin-bottom:1rem;
+    animation:fadeDown .6s .1s ease-out both;
+  }
+  h1 span{
+    background:linear-gradient(135deg,var(--accent),var(--green));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  }
+
+  .subtitle{
+    max-width:540px;font-size:1.15rem;font-weight:300;color:var(--text-dim);
+    margin-bottom:2.5rem;
+    animation:fadeDown .6s .2s ease-out both;
+  }
+
+  /* features strip */
+  .features{
+    display:flex;flex-wrap:wrap;justify-content:center;gap:.6rem;
+    margin-bottom:3rem;
+    animation:fadeDown .6s .3s ease-out both;
+  }
+  .feat{
+    font-family:var(--mono);font-size:.72rem;letter-spacing:.04em;
+    background:var(--surface);border:1px solid var(--border);border-radius:6px;
+    padding:.35rem .8rem;color:var(--text-dim);
+    transition:border-color .2s,color .2s;
+  }
+  .feat:hover{border-color:var(--accent-dim);color:var(--accent)}
+
+  /* generator card */
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:2rem;max-width:560px;width:100%;text-align:left;
+    box-shadow:0 4px 40px rgba(0,0,0,.4);
+    animation:fadeUp .7s .35s ease-out both;
+  }
+  .card h2{
+    font-family:var(--mono);font-size:.8rem;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--accent);margin-bottom:1.25rem;
+  }
+  .field{margin-bottom:1rem}
+  .field label{
+    display:block;font-size:.8rem;font-weight:500;color:var(--text-dim);
+    margin-bottom:.35rem;
+  }
+  .field input{
+    width:100%;font-family:var(--mono);font-size:.9rem;
+    background:var(--bg);color:var(--text-bright);
+    border:1px solid var(--border);border-radius:6px;
+    padding:.6rem .8rem;outline:none;
+    transition:border-color .2s;
+  }
+  .field input:focus{border-color:var(--accent)}
+  .field input::placeholder{color:var(--text-dim);opacity:.5}
+
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+
+  /* buttons */
+  .actions{display:flex;gap:.75rem;margin-top:1.5rem;flex-wrap:wrap}
+  .btn{
+    font-family:var(--mono);font-size:.82rem;font-weight:600;
+    border:none;border-radius:8px;padding:.7rem 1.4rem;cursor:pointer;
+    display:inline-flex;align-items:center;gap:.5rem;
+    transition:transform .15s,box-shadow .2s,background .2s;
+  }
+  .btn:active{transform:scale(.97)}
+  .btn-primary{
+    background:linear-gradient(135deg,var(--accent),var(--green));
+    color:var(--bg);
+    box-shadow:0 0 20px var(--accent-glow);
+  }
+  .btn-primary:hover{box-shadow:0 0 30px rgba(34,211,238,.25)}
+  .btn-secondary{
+    background:var(--bg);color:var(--text);
+    border:1px solid var(--border);
+  }
+  .btn-secondary:hover{border-color:var(--accent-dim);color:var(--accent)}
+
+  /* curl one-liner */
+  .oneliner{
+    margin-top:1.25rem;background:var(--bg);border:1px solid var(--border);
+    border-radius:6px;padding:.6rem .8rem;font-family:var(--mono);font-size:.75rem;
+    color:var(--text-dim);word-break:break-all;position:relative;cursor:pointer;
+    transition:border-color .2s;
+  }
+  .oneliner:hover{border-color:var(--accent-dim)}
+  .oneliner .copied{
+    position:absolute;right:.6rem;top:50%;transform:translateY(-50%);
+    font-size:.7rem;color:var(--green);opacity:0;transition:opacity .3s;
+  }
+  .oneliner .copied.show{opacity:1}
+
+  /* preview panel */
+  .preview{
+    margin-top:1.5rem;max-height:0;overflow:hidden;
+    transition:max-height .4s ease;
+  }
+  .preview.open{max-height:200px}
+  .preview pre{
+    background:var(--bg);border:1px solid var(--border);border-radius:6px;
+    padding:.8rem;font-family:var(--mono);font-size:.7rem;color:var(--text-dim);
+    overflow-x:auto;line-height:1.5;
+  }
+  .preview pre .hl{color:var(--accent)}
+
+  /* how it works */
+  .section{max-width:800px;margin:0 auto;padding:4rem 1.5rem}
+  .section h2{
+    font-family:var(--sans);font-weight:700;font-size:1.8rem;color:var(--text-bright);
+    margin-bottom:2rem;text-align:center;
+  }
+  .steps{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;
+  }
+  .step{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:1.5rem;
+  }
+  .step-num{
+    font-family:var(--mono);font-size:.7rem;color:var(--accent);
+    letter-spacing:.1em;margin-bottom:.5rem;
+  }
+  .step h3{font-size:1rem;color:var(--text-bright);margin-bottom:.4rem}
+  .step p{font-size:.85rem;color:var(--text-dim)}
+
+  footer{
+    text-align:center;padding:3rem 1.5rem;font-size:.75rem;color:var(--text-dim);
+    font-family:var(--mono);
+  }
+  footer a{color:var(--accent);text-decoration:none}
+
+  @keyframes fadeDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+
+  @media(max-width:520px){
+    .field-row{grid-template-columns:1fr}
+    .actions{flex-direction:column}
+    .btn{width:100%;justify-content:center}
+  }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="badge">Open Source</div>
+  <h1><span>buildme</span></h1>
+  <p class="subtitle">Zero-config container image builds with semantic versioning, registry auto-detection, and post-build hooks.</p>
+
+  <div class="features">
+    <span class="feat">Docker + Podman</span>
+    <span class="feat">Auto Versioning</span>
+    <span class="feat">Registry Detection</span>
+    <span class="feat">SELinux Aware</span>
+    <span class="feat">Post-Build Hooks</span>
+    <span class="feat">Self-Update</span>
+    <span class="feat">Multi-Service</span>
+    <span class="feat">Dry-Run Mode</span>
+  </div>
+
+  <div class="card">
+    <h2>▸ Generate your script</h2>
+    <div class="field-row">
+      <div class="field">
+        <label>GitHub Owner / Org</label>
+        <input type="text" id="owner" placeholder="Nillth" />
+      </div>
+      <div class="field">
+        <label>Repository</label>
+        <input type="text" id="repo" placeholder="buildme" />
+      </div>
+    </div>
+    <div class="field">
+      <label>Branch</label>
+      <input type="text" id="branch" value="main" />
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="downloadScript()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Download buildme.sh
+      </button>
+      <button class="btn btn-secondary" onclick="togglePreview()">Preview</button>
+    </div>
+
+    <div class="oneliner" id="oneliner" onclick="copyCurl()">
+      <span id="curlText"></span>
+      <span class="copied" id="copiedBadge">copied!</span>
+    </div>
+
+    <div class="preview" id="preview">
+      <pre id="previewCode"></pre>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <h2>How it works</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <h3>Drop it in</h3>
+      <p>Place buildme.sh at the root of any repo containing a Dockerfile.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <h3>Run it</h3>
+      <p>Execute <code>./buildme.sh</code> — it auto-detects your registry, engine, and build mode.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <h3>Version &amp; Push</h3>
+      <p>Semantic versioning (major.yyddd.incremental) is applied and images are pushed automatically.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <h3>Extend</h3>
+      <p>Add hooks in <code>buildme.d/</code> or use <code>--extensions</code> to grab community hooks.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <a href="https://github.com/Nillth/buildme">github.com/Nillth/buildme</a> · MIT License
+</footer>
+
+<script>
+const SCRIPT_URL = 'https://raw.githubusercontent.com/Nillth/buildme/main/buildme.sh';
+
+function getValues() {
+  const owner = document.getElementById('owner').value.trim() || 'Nillth';
+  const repo = document.getElementById('repo').value.trim() || 'buildme';
+  const branch = document.getElementById('branch').value.trim() || 'main';
+  return { owner, repo, branch };
+}
+
+function buildUpdateUrl({ owner, repo, branch }) {
+  return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/buildme.sh`;
+}
+
+function updateCurl() {
+  const v = getValues();
+  const url = buildUpdateUrl(v);
+  document.getElementById('curlText').textContent =
+    `curl -fsSL ${SCRIPT_URL} | sed 's|UPDATE_URL=".*"|UPDATE_URL="${url}"|' > buildme.sh && chmod +x buildme.sh`;
+}
+
+// keep curl one-liner in sync
+document.querySelectorAll('#owner,#repo,#branch').forEach(el => el.addEventListener('input', updateCurl));
+updateCurl();
+
+async function downloadScript() {
+  const v = getValues();
+  const updateUrl = buildUpdateUrl(v);
+
+  try {
+    const resp = await fetch(SCRIPT_URL);
+    if (!resp.ok) throw new Error('Fetch failed');
+    let text = await resp.text();
+    text = text.replace(
+      /UPDATE_URL="[^"]*"/,
+      `UPDATE_URL="${updateUrl}"`
+    );
+    const blob = new Blob([text], { type: 'application/x-shellscript' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'buildme.sh';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch (e) {
+    // fallback: generate stub locally
+    alert('Could not fetch from GitHub. Check your connection and try again.');
+  }
+}
+
+function togglePreview() {
+  const el = document.getElementById('preview');
+  const v = getValues();
+  const url = buildUpdateUrl(v);
+  document.getElementById('previewCode').innerHTML =
+    `#!/bin/bash\nset -euo pipefail\n\n# ...\n<span class="hl">UPDATE_URL="${url}"</span>\n# ...\n\n# Auto-detects registry from git remote\n# Versions: major.yyddd.incremental\n# Supports docker + podman\n# Post-build hooks via buildme.d/`;
+  el.classList.toggle('open');
+}
+
+function copyCurl() {
+  const text = document.getElementById('curlText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const badge = document.getElementById('copiedBadge');
+    badge.classList.add('show');
+    setTimeout(() => badge.classList.remove('show'), 1500);
+  });
+}
+</script>
+</body>
+</html>

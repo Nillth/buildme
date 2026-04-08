@@ -4,14 +4,25 @@
 # summarising commits since the previous tag.
 # Set RELEASE_HOST to your Gitea instance or "https://api.github.com".
 
-RELEASE_HOST="https://git.nillth.net"   # Gitea base URL, or https://api.github.com
+RELEASE_HOST="https://api.github.com"    # GitHub default; for Gitea use e.g. https://git.example.com
 RELEASE_TOKEN="${GITEA_TOKEN:-${GITHUB_TOKEN:-}}"  # env var: GITEA_TOKEN or GITHUB_TOKEN
 RELEASE_OWNER="$GIT_OWNER"
 RELEASE_REPO="$PROJECT_NAME"
 PRERELEASE=false
 
+# ── Pre-flight checks ──────────────────────────────────────────
+if ! command -v jq &>/dev/null; then
+    echo -e "${RED}❌ jq is required for release creation but was not found. Install jq and retry.${RESET}"
+    return 0
+fi
+
 if [[ -z "$RELEASE_TOKEN" ]]; then
     echo -e "${YELLOW}⚠️  No GITEA_TOKEN or GITHUB_TOKEN set. Skipping release creation.${RESET}"
+    return 0
+fi
+
+if [[ -z "$RELEASE_OWNER" ]]; then
+    echo -e "${YELLOW}⚠️  No git remote detected (GIT_OWNER is empty). Skipping release creation.${RESET}"
     return 0
 fi
 
