@@ -230,6 +230,27 @@
   }
   .config-sub code{color:var(--text);font-family:var(--mono);font-size:.75rem}
 
+  /* fork prompt */
+  .fork-prompt{
+    background:var(--bg);border:1px solid var(--yellow);border-radius:var(--radius);
+    padding:1.25rem;text-align:center;
+  }
+  .fork-prompt p{
+    font-size:.85rem;color:var(--text);margin-bottom:.85rem;line-height:1.5;
+  }
+  .fork-prompt .fork-owner{color:var(--accent);font-family:var(--mono);font-weight:600}
+  .btn-fork{
+    background:var(--bg);color:var(--yellow);
+    border:1px solid var(--yellow);
+    font-family:var(--mono);font-size:.8rem;font-weight:600;
+    border-radius:8px;padding:.6rem 1.2rem;cursor:pointer;
+    display:inline-flex;align-items:center;gap:.5rem;
+    text-decoration:none;
+    transition:background .2s,color .2s;
+  }
+  .btn-fork:hover{background:var(--yellow);color:var(--bg)}
+  .btn-fork svg{flex-shrink:0}
+
   /* shared download bar at bottom of card */
   .card-footer{
     border-top:1px solid var(--border);
@@ -317,6 +338,8 @@
         <input type="text" id="branch" value="main" />
       </div>
 
+      <div id="forkPrompt" class="fork-prompt" style="display:none"></div>
+
       <div class="oneliner" id="oneliner" onclick="copyCurl()">
         <span id="curlText"></span>
         <span class="copied" id="copiedBadge">copied!</span>
@@ -390,6 +413,9 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
+/* ── Source repo (the upstream this page was built from) ── */
+const SOURCE = { owner: 'Nillth', repo: 'buildme' };
+
 /* ── Detect owner/repo from the page's own hosting URL ── */
 (function detectDefaults() {
   const loc = window.location;
@@ -397,15 +423,15 @@ document.querySelectorAll('.tab').forEach(tab => {
   if (ghPages) {
     const owner = ghPages[1];
     const repo = loc.pathname.split('/').filter(Boolean)[0];
-    if (owner) document.getElementById('owner').value = owner;
-    if (repo)  document.getElementById('repo').value = repo;
+    if (owner) { SOURCE.owner = owner; document.getElementById('owner').value = owner; }
+    if (repo)  { SOURCE.repo = repo;   document.getElementById('repo').value = repo; }
     return;
   }
   const meta = document.querySelector('meta[name="buildme-repo"]');
   if (meta) {
     const parts = meta.content.split('/');
-    if (parts[0]) document.getElementById('owner').value = parts[0];
-    if (parts[1]) document.getElementById('repo').value = parts[1];
+    if (parts[0]) { SOURCE.owner = parts[0]; document.getElementById('owner').value = parts[0]; }
+    if (parts[1]) { SOURCE.repo = parts[1];  document.getElementById('repo').value = parts[1]; }
   }
 })();
 
@@ -442,6 +468,21 @@ document.querySelectorAll('#owner,#repo,#branch').forEach(el => {
   el.addEventListener('input', () => { updateCurl(); updateFooter(); loadAndRenderConfig(); });
 });
 updateCurl();
+
+/* ── Fork prompt ── */
+const FORK_SVG = '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75v-.878a2.25 2.25 0 111.5 0v.878a2.25 2.25 0 01-2.25 2.25h-1.5v2.128a2.251 2.251 0 11-1.5 0V8.5h-1.5A2.25 2.25 0 013.5 6.25v-.878a2.25 2.25 0 111.5 0zM5 3.25a.75.75 0 10-1.5 0 .75.75 0 001.5 0zm6.75.75a.75.75 0 10 0-1.5.75.75 0 000 1.5zM8 12.75a.75.75 0 10 0-1.5.75.75 0 000 1.5z"/></svg>';
+
+function showForkPrompt(targetOwner) {
+  const el = document.getElementById('forkPrompt');
+  const forkUrl = `https://github.com/${SOURCE.owner}/${SOURCE.repo}/fork`;
+  el.innerHTML = `<p>Repository <span class="fork-owner">${targetOwner}/${SOURCE.repo}</span> was not found.</p>` +
+    `<a class="btn-fork" href="${forkUrl}" target="_blank" rel="noopener">${FORK_SVG} Fork ${SOURCE.owner}/${SOURCE.repo}</a>`;
+  el.style.display = '';
+}
+
+function hideForkPrompt() {
+  document.getElementById('forkPrompt').style.display = 'none';
+}
 
 /* ── Parse buildme.conf.example into CONFIG_SECTIONS ── */
 function parseConfExample(text) {
@@ -492,6 +533,7 @@ function getConfExampleUrl() {
 async function loadAndRenderConfig() {
   const container = document.getElementById('configGroups');
   const url = getConfExampleUrl();
+  const v = getValues();
 
   // Skip re-fetch if owner/repo/branch hasn't changed
   if (url === confLoadCache.key) return;
@@ -499,12 +541,25 @@ async function loadAndRenderConfig() {
   container.innerHTML = '';
   try {
     const resp = await fetch(url);
-    if (!resp.ok) throw new Error(resp.status);
+    if (!resp.ok) {
+      if (resp.status === 404) {
+        showForkPrompt(v.owner);
+        container.innerHTML = '<p style="color:var(--text-dim);font-family:var(--mono);font-size:.82rem;">Fork the repository first, then come back to configure.</p>';
+      } else {
+        hideForkPrompt();
+        container.innerHTML = '<p style="color:var(--red);font-family:var(--mono);font-size:.82rem;">Could not fetch buildme.conf.example — check owner/repo/branch.</p>';
+      }
+      confLoadCache = { key: '', sections: [] };
+      return;
+    }
+    hideForkPrompt();
     const text = await resp.text();
     CONFIG_SECTIONS = parseConfExample(text);
     confLoadCache = { key: url, sections: CONFIG_SECTIONS };
   } catch (e) {
-    container.innerHTML = '<p style="color:var(--red);font-family:var(--mono);font-size:.82rem;">Could not fetch buildme.conf.example — check owner/repo/branch.</p>';
+    hideForkPrompt();
+    container.innerHTML = '<p style="color:var(--red);font-family:var(--mono);font-size:.82rem;">Could not fetch buildme.conf.example — check your connection.</p>';
+    confLoadCache = { key: '', sections: [] };
     return;
   }
   renderConfigGroups();
