@@ -6,7 +6,7 @@
 #   bash install-wsl-ssh-agent.sh
 #   sudo bash install-wsl-ssh-agent.sh --local-user marc
 #   bash install-wsl-ssh-agent.sh --npiperelay-path /mnt/c/tools/npiperelay.exe
-# curl -fsSL https://gist.githubusercontent.com/Nillth/c8bdbb660994cffd7b135f418965218b/raw/install-wsl-ssh-agent.sh | sudo bash -s -- --local-user marc
+#   curl -fsSL https://raw.githubusercontent.com/Nillth/buildme/main/install-wsl-ssh-agent.sh | sudo bash -s -- --local-user marc
 
 set -euo pipefail
 

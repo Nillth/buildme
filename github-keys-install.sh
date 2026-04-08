@@ -5,7 +5,7 @@
 # Examples:
 #   sudo bash github-keys-install.sh --github torvalds
 #   sudo bash github-keys-install.sh --github octocat --local-user marc
-# curl -fsSL https://gist.githubusercontent.com/Nillth/40029c26931788da98f703af49bee7a4/raw/524d2eb72c8d404c12eaed52fc36d780e2fa21e3/github-keys-install.sh | sudo bash -s -- --github nillth
+#   curl -fsSL https://raw.githubusercontent.com/Nillth/buildme/main/github-keys-install.sh | sudo bash -s -- --github nillth
 
 set -euo pipefail
 
