@@ -14,6 +14,9 @@ RESET='\033[0m'
 # Self-update URL — change this to your raw GitHub URL after publishing
 UPDATE_URL="https://raw.githubusercontent.com/YOUR_ORG/YOUR_REPO/main/buildme.sh"
 
+# Directory containing this script (used for buildme.d/ and buildme.conf)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # ──────────────────────────────────────────────────────────────
 # CLI argument parsing
 SKIP_PUSH=false
@@ -239,9 +242,6 @@ run_cmd() {
         "$@"
     fi
 }
-
-# Directory containing this script (used for buildme.d/ and buildme.conf)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ──────────────────────────────────────────────────────────────
 # Anchor to git root so the script works from any subdirectory
